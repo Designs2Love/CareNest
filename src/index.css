@@ -1,0 +1,159 @@
+@import "tailwindcss";
+
+/* 6 Theme Color Variable Palettes (Coral Rose is Default) */
+:root,
+[data-theme="rose"] {
+  --color-teal-50: #fff1f2;
+  --color-teal-100: #ffe4e6;
+  --color-teal-200: #fecdd3;
+  --color-teal-300: #fda4af;
+  --color-teal-400: #fb7185;
+  --color-teal-500: #f43f5e;
+  --color-teal-600: #e11d48;
+  --color-teal-700: #be123c;
+  --color-teal-800: #9f1239;
+  --color-teal-900: #881337;
+  --color-teal-950: #4c0519;
+}
+
+[data-theme="teal"] {
+  --color-teal-50: #f0fdfa;
+  --color-teal-100: #ccfbf1;
+  --color-teal-200: #99f6e4;
+  --color-teal-300: #5eead4;
+  --color-teal-400: #2dd4bf;
+  --color-teal-500: #14b8a6;
+  --color-teal-600: #0d9488;
+  --color-teal-700: #0f766e;
+  --color-teal-800: #115e59;
+  --color-teal-900: #134e4a;
+  --color-teal-950: #042f2e;
+}
+
+[data-theme="ocean"] {
+  --color-teal-50: #eff6ff;
+  --color-teal-100: #dbeafe;
+  --color-teal-200: #bfdbfe;
+  --color-teal-300: #93c5fd;
+  --color-teal-400: #60a5fa;
+  --color-teal-500: #3b82f6;
+  --color-teal-600: #2563eb;
+  --color-teal-700: #1d4ed8;
+  --color-teal-800: #1e40af;
+  --color-teal-900: #1e3a8a;
+  --color-teal-950: #172554;
+}
+
+[data-theme="emerald"] {
+  --color-teal-50: #f0fdf4;
+  --color-teal-100: #dcfce7;
+  --color-teal-200: #bbf7d0;
+  --color-teal-300: #86efac;
+  --color-teal-400: #4ade80;
+  --color-teal-500: #22c55e;
+  --color-teal-600: #16a34a;
+  --color-teal-700: #15803d;
+  --color-teal-800: #166534;
+  --color-teal-900: #14532d;
+  --color-teal-950: #052e16;
+}
+
+[data-theme="violet"] {
+  --color-teal-50: #f5f3ff;
+  --color-teal-100: #ede9fe;
+  --color-teal-200: #ddd6fe;
+  --color-teal-300: #c4b5fd;
+  --color-teal-400: #a78bfa;
+  --color-teal-500: #8b5cf6;
+  --color-teal-600: #7c3aed;
+  --color-teal-700: #6d28d9;
+  --color-teal-800: #5b21b6;
+  --color-teal-900: #4c1d95;
+  --color-teal-950: #2e1065;
+}
+
+[data-theme="amber"] {
+  --color-teal-50: #fffbeb;
+  --color-teal-100: #fef3c7;
+  --color-teal-200: #fde68a;
+  --color-teal-300: #fcd34d;
+  --color-teal-400: #fbbf24;
+  --color-teal-500: #f59e0b;
+  --color-teal-600: #d97706;
+  --color-teal-700: #b45309;
+  --color-teal-800: #92400e;
+  --color-teal-900: #78350f;
+  --color-teal-950: #451a03;
+}
+
+
+@layer base {
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  
+  .font-mono,
+  .tabular-nums {
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Print styling for clinician medication reports */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+}
+
+@media screen {
+  .print-only {
+    display: none !important;
+  }
+}
+
+/* Mobile & Tablet (<=1024px): Hide visual scrollbars while keeping touch swiping and inertia active */
+@media (max-width: 1024px) {
+  html, body, div, main, nav, section, ul, ol, table, aside {
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE/Edge */
+    -webkit-overflow-scrolling: touch; /* iOS inertial swiping */
+  }
+  
+  *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+  }
+}
+
+/* Utility class to hide scrollbar explicitly on any device */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+  -webkit-overflow-scrolling: touch;
+}

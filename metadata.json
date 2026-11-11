@@ -1,0 +1,6 @@
+{
+  "name": "MedVault - Medication & Vaccination Management",
+  "description": "Offline-first, multi-patient medication and vaccination management PWA with real-time expiry alerts, daily adherence tracking, and encrypted records.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
