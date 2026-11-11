@@ -22,6 +22,8 @@ import {
   LogOut,
   Shield,
   Palette,
+  Trash2,
+  Sparkles,
 } from 'lucide-react';
 import {
   PatientProfile,
@@ -41,6 +43,9 @@ interface HeaderProps {
   onSelectPage: (page: ActivePage) => void;
   onSelectPatient: (patientId: string) => void;
   onResetDemo?: () => void;
+  onEraseAllData?: () => void;
+  onEraseDemoData?: () => void;
+  onOpenWelcome?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -53,6 +58,9 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectPage,
   onSelectPatient,
   onResetDemo,
+  onEraseAllData,
+  onEraseDemoData,
+  onOpenWelcome,
 }) => {
   const [showAlertDropdown, setShowAlertDropdown] = useState(false);
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
@@ -530,19 +538,69 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               )}
 
-              {/* Reset Demo Data Button */}
+              {/* Erase All Data Button (Above Restore Demo Data) */}
+              {onEraseAllData && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('⚠️ Erase ALL Data? This will permanently wipe all patient records, medications, logs, and vaccines.')) {
+                      onEraseAllData();
+                      setShowMobileMenu(false);
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-rose-950/40 hover:bg-rose-950/70 text-rose-300 border border-rose-900/50 text-[11px] font-semibold transition cursor-pointer"
+                >
+                  <Trash2 className="w-3 h-3 text-rose-400" />
+                  <span>Erase All Data</span>
+                </button>
+              )}
+
+              {/* Reset / Restore Demo Data Button */}
               {onResetDemo && (
                 <button
+                  type="button"
                   onClick={() => {
-                    if (window.confirm('Reset all profiles and medications back to initial demo data?')) {
+                    if (window.confirm('Restore all profiles and medications back to initial demo data?')) {
                       onResetDemo();
                       setShowMobileMenu(false);
                     }
                   }}
-                  className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-[11px] font-medium transition"
+                  className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-teal-300 border border-slate-700/60 text-[11px] font-semibold transition cursor-pointer"
                 >
-                  <RotateCcw className="w-3 h-3 text-slate-400" />
+                  <RotateCcw className="w-3 h-3 text-teal-400" />
                   <span>Restore Demo Data</span>
+                </button>
+              )}
+
+              {/* Erase Demo Data Button (Below Restore Demo Data) */}
+              {onEraseDemoData && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('Erase all demo records (Eleanor, Michael, Sophia)?')) {
+                      onEraseDemoData();
+                      setShowMobileMenu(false);
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-amber-950/40 hover:bg-amber-950/70 text-amber-300 border border-amber-900/50 text-[11px] font-medium transition cursor-pointer"
+                >
+                  <Trash2 className="w-3 h-3 text-amber-400" />
+                  <span>Erase Demo Data</span>
+                </button>
+              )}
+
+              {/* Welcome Screen Opener */}
+              {onOpenWelcome && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenWelcome();
+                    setShowMobileMenu(false);
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-800/60 text-slate-400 hover:text-slate-200 text-[10px] transition cursor-pointer"
+                >
+                  <Sparkles className="w-2.5 h-2.5 text-teal-400" />
+                  <span>Open Welcome Tour</span>
                 </button>
               )}
 

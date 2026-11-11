@@ -26,6 +26,7 @@ const STORAGE_KEYS = {
   ACTIVE_PATIENT: 'medvault_active_patient_v1',
   VAULT_PASSCODE: 'medvault_passcode_hash_v1',
   IS_LOCKED: 'medvault_is_locked_v1',
+  ONBOARDING_COMPLETED: 'carenest_onboarding_completed_v1',
 };
 
 // Web Crypto PBKDF2 + AES-GCM Key Derivation & Encryption helpers
@@ -119,6 +120,116 @@ class VaultStorage {
       this.resetToSeedData();
     }
     this.initialized = true;
+  }
+
+  // Onboarding / Get Started state (Only for first-time visitors)
+  public isOnboardingCompleted(): boolean {
+    return localStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED) === 'true';
+  }
+
+  public completeOnboarding(): void {
+    localStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETED, 'true');
+  }
+
+  public resetOnboarding(): void {
+    localStorage.removeItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
+  }
+
+  // Erase all demo records and start with user's custom patient
+  public clearAllDemoDataAndStart(firstPatient: Omit<PatientProfile, 'id' | 'createdAt' | 'isArchived'>): PatientProfile {
+    const newPatient: PatientProfile = {
+      ...firstPatient,
+      id: 'pat-' + crypto.randomUUID().slice(0, 8),
+      isArchived: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    localStorage.setItem(STORAGE_KEYS.PATIENTS, JSON.stringify([newPatient]));
+    localStorage.setItem(STORAGE_KEYS.MEDICATIONS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.REGIMENS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.PACKAGES, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.DOSE_LOGS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.VACCINATIONS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_PATIENT, newPatient.id);
+    this.completeOnboarding();
+
+    return newPatient;
+  }
+
+  // Erase ALL patient profiles and all medications/records (Complete Blank Slate)
+  public eraseAllData() {
+    // Create an initial blank default profile so the app structure is valid
+    const defaultPatient: PatientProfile = {
+      id: 'pat-' + crypto.randomUUID().slice(0, 8),
+      name: 'Primary Patient',
+      preferredName: 'Patient',
+      gender: 'Female',
+      allergies: [],
+      avatarColor: 'bg-rose-600',
+      isArchived: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    localStorage.setItem(STORAGE_KEYS.PATIENTS, JSON.stringify([defaultPatient]));
+    localStorage.setItem(STORAGE_KEYS.MEDICATIONS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.REGIMENS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.PACKAGES, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.DOSE_LOGS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.VACCINATIONS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_PATIENT, defaultPatient.id);
+    return defaultPatient;
+  }
+
+  // Erase only Demo Data (Leaves custom non-demo patients intact, or creates clean patient if only demo existed)
+  public eraseDemoDataOnly(): string {
+    const demoPatientIds = new Set(['pat-eleanor', 'pat-michael', 'pat-sophia']);
+
+    const allPatients = this.getPatients(true);
+    const nonDemoPatients = allPatients.filter((p) => !demoPatientIds.has(p.id));
+
+    let activePatId = '';
+
+    if (nonDemoPatients.length > 0) {
+      localStorage.setItem(STORAGE_KEYS.PATIENTS, JSON.stringify(nonDemoPatients));
+      activePatId = nonDemoPatients[0].id;
+    } else {
+      // If only demo patients existed, initialize with a clean personal profile
+      const cleanPat: PatientProfile = {
+        id: 'pat-' + crypto.randomUUID().slice(0, 8),
+        name: 'My Profile',
+        preferredName: 'Me',
+        gender: 'Female',
+        allergies: [],
+        avatarColor: 'bg-rose-600',
+        isArchived: false,
+        createdAt: new Date().toISOString(),
+      };
+      localStorage.setItem(STORAGE_KEYS.PATIENTS, JSON.stringify([cleanPat]));
+      activePatId = cleanPat.id;
+    }
+
+    // Filter out medications, regimens, packages, logs, and vaccines belonging to demo patient IDs
+    const filterOutDemo = (key: string, idField: string) => {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        try {
+          const list = JSON.parse(raw);
+          const filtered = list.filter((item: any) => !demoPatientIds.has(item[idField]));
+          localStorage.setItem(key, JSON.stringify(filtered));
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    filterOutDemo(STORAGE_KEYS.MEDICATIONS, 'patientId');
+    filterOutDemo(STORAGE_KEYS.REGIMENS, 'patientId');
+    filterOutDemo(STORAGE_KEYS.PACKAGES, 'patientId');
+    filterOutDemo(STORAGE_KEYS.DOSE_LOGS, 'patientId');
+    filterOutDemo(STORAGE_KEYS.VACCINATIONS, 'patientId');
+
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_PATIENT, activePatId);
+    return activePatId;
   }
 
   public resetToSeedData() {

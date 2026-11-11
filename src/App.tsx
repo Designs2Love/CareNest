@@ -17,12 +17,16 @@ import { VaccinationHistoryPage } from './pages/VaccinationHistoryPage';
 import { PatientProfilesPage } from './pages/PatientProfilesPage';
 import { AddMedicationPage } from './pages/AddMedicationPage';
 import { ExportBackupPage } from './pages/ExportBackupPage';
+import { GetStartedModal } from './components/GetStartedModal';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { WifiOff, Heart, AlertTriangle } from 'lucide-react';
 import { ThemeId, getSavedTheme, applyTheme } from './services/theme';
 
 export default function App() {
   const isOnline = useOnlineStatus();
+
+  // Welcome / Onboarding state: Always shows on initial visit or refresh; users can click 'Skip to App'
+  const [showGetStarted, setShowGetStarted] = useState<boolean>(true);
 
   // Color Theme State (Coral Rose is default)
   const [currentTheme, setCurrentTheme] = useState<ThemeId>(() => {
@@ -196,11 +200,43 @@ export default function App() {
     reloadData();
   };
 
-  // Reset to demo data
+  // Reset to demo data (Fixed: thoroughly resets seed data, updates active patient state, and reloads vault)
   const handleResetDemo = () => {
     vaultStorage.resetToSeedData();
     setActivePatientId('pat-eleanor');
     reloadData();
+    setActivePage('today');
+  };
+
+  // Erase ALL data (Complete blank slate)
+  const handleEraseAllData = () => {
+    const cleanPatient = vaultStorage.eraseAllData();
+    setActivePatientId(cleanPatient.id);
+    reloadData();
+    setActivePage('today');
+  };
+
+  // Erase only Demo Data (Eleanor, Michael, Sophia)
+  const handleEraseDemoData = () => {
+    const newActiveId = vaultStorage.eraseDemoDataOnly();
+    setActivePatientId(newActiveId);
+    reloadData();
+    setActivePage('today');
+  };
+
+  // Onboarding action handlers
+  const handleKeepDemoData = () => {
+    vaultStorage.completeOnboarding();
+    setShowGetStarted(false);
+  };
+
+  const handleClearAndCreatePatient = (
+    patientData: Omit<PatientProfile, 'id' | 'createdAt' | 'isArchived'>
+  ) => {
+    const newPat = vaultStorage.clearAllDemoDataAndStart(patientData);
+    setActivePatientId(newPat.id);
+    reloadData();
+    setShowGetStarted(false);
     setActivePage('today');
   };
 
@@ -217,6 +253,14 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-teal-500/20 selection:text-teal-900 w-full max-w-full overflow-x-hidden">
       
+      {/* First-Time User Onboarding Modal */}
+      {showGetStarted && (
+        <GetStartedModal
+          onKeepDemoData={handleKeepDemoData}
+          onClearAndCreatePatient={handleClearAndCreatePatient}
+        />
+      )}
+
       {/* 3, 4, 5, 9. Sticky Header */}
       <Header
         activePatient={activePatient}
@@ -228,6 +272,9 @@ export default function App() {
         onSelectPage={setActivePage}
         onSelectPatient={handleSelectPatient}
         onResetDemo={handleResetDemo}
+        onEraseAllData={handleEraseAllData}
+        onEraseDemoData={handleEraseDemoData}
+        onOpenWelcome={() => setShowGetStarted(true)}
       />
 
       {/* Main Single-View Page Container (Zero horizontal overflow) */}
