@@ -24,6 +24,9 @@ import {
   Palette,
   Trash2,
   Sparkles,
+  Monitor,
+  Tablet,
+  Laptop,
 } from 'lucide-react';
 import {
   PatientProfile,
@@ -44,7 +47,6 @@ interface HeaderProps {
   onSelectPatient: (patientId: string) => void;
   onResetDemo?: () => void;
   onEraseAllData?: () => void;
-  onEraseDemoData?: () => void;
   onOpenWelcome?: () => void;
 }
 
@@ -59,7 +61,6 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectPatient,
   onResetDemo,
   onEraseAllData,
-  onEraseDemoData,
   onOpenWelcome,
 }) => {
   const [showAlertDropdown, setShowAlertDropdown] = useState(false);
@@ -70,6 +71,51 @@ export const Header: React.FC<HeaderProps> = ({
   const patientRef = useRef<HTMLDivElement>(null);
   const { isInstallable, install, isIOS } = usePWAInstall();
   const [showIOSModal, setShowIOSModal] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+
+  // Generate and download a local offline desktop launcher file
+  const handleDownloadLauncher = () => {
+    const currentOrigin = window.location.origin;
+    const currentPath = window.location.pathname;
+    const appUrl = `${currentOrigin}${currentPath}`;
+    const launcherHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CareNest - Local Desktop Launcher</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #090d16; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+    .card { max-width: 480px; width: 100%; background: #131b2e; border: 1px solid #1e293b; border-radius: 18px; padding: 32px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); }
+    .badge { display: inline-block; font-size: 11px; background: rgba(13, 148, 136, 0.2); color: #2dd4bf; border: 1px solid rgba(13, 148, 136, 0.4); padding: 4px 12px; border-radius: 9999px; font-weight: 700; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+    h1 { margin: 0 0 10px 0; font-size: 22px; color: #ffffff; font-weight: 700; }
+    p { font-size: 13px; line-height: 1.6; color: #94a3b8; margin: 0 0 20px 0; }
+    .btn { display: inline-block; width: 100%; box-sizing: border-box; background: #0d9488; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 14px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3); }
+    .btn:hover { background: #14b8a6; }
+    .note { font-size: 11px; margin-top: 16px; color: #64748b; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">Offline Health Vault</div>
+    <h1>CareNest Desktop & Tablet</h1>
+    <p>Double-click this launcher anytime on your desktop, laptop, or tablet. CareNest is completely offline-first and private; your medication schedules and patient vault stay secure on your device.</p>
+    <a href="${appUrl}" class="btn" target="_blank" rel="noopener noreferrer">Launch CareNest Vault</a>
+    <div class="note">Keep this file on your Desktop, Documents, or Tablet Files folder for rapid 1-click access.</div>
+  </div>
+</body>
+</html>`;
+
+    const blob = new Blob([launcherHtml], { type: 'text/html' });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = 'CareNest-App-Launcher.html';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(downloadUrl);
+  };
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -324,6 +370,17 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden sm:inline">Add Med</span>
           </button>
 
+          {/* 4. Download App Button (Desktop & Tablet) */}
+          <button
+            type="button"
+            onClick={() => setShowDownloadModal(true)}
+            aria-label="Download App for Desktop or Tablet"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700/90 border border-teal-500/30 text-teal-300 hover:text-teal-200 text-xs font-medium shadow-xs transition active:scale-95 shrink-0 cursor-pointer"
+            title="Download & run CareNest locally on Desktop or Tablet"
+          >
+            <Download className="w-3.5 h-3.5 text-teal-400" />
+            <span className="hidden md:inline">Download App</span>
+          </button>
 
           {/* 5. Hamburger Menu Button */}
           <button
@@ -514,29 +571,18 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Bottom section: Compact Utilities (zero scrollbar) */}
           <div className="pt-2 border-t border-slate-800 space-y-1.5 shrink-0">
-              {/* PWA Install Button */}
-              {isInstallable && (
-                <button
-                  onClick={() => {
-                    install();
-                    setShowMobileMenu(false);
-                  }}
-                  className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-teal-600/30 border border-teal-500/40 text-teal-300 hover:bg-teal-600/40 text-xs font-semibold transition"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  Install App
-                </button>
-              )}
-
-              {isIOS && (
-                <button
-                  onClick={() => setShowIOSModal(true)}
-                  className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  Install on iOS
-                </button>
-              )}
+              {/* Download App Button (Desktop & Tablet) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDownloadModal(true);
+                  setShowMobileMenu(false);
+                }}
+                className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-teal-600/30 hover:bg-teal-600/50 text-teal-300 border border-teal-500/40 text-xs font-semibold transition cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5 text-teal-400" />
+                <span>Download App (Desktop & Tablet)</span>
+              </button>
 
               {/* Erase All Data Button (Above Restore Demo Data) */}
               {onEraseAllData && (
@@ -572,23 +618,6 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               )}
 
-              {/* Erase Demo Data Button (Below Restore Demo Data) */}
-              {onEraseDemoData && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm('Erase all demo records (Eleanor, Michael, Sophia)?')) {
-                      onEraseDemoData();
-                      setShowMobileMenu(false);
-                    }
-                  }}
-                  className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-amber-950/40 hover:bg-amber-950/70 text-amber-300 border border-amber-900/50 text-[11px] font-medium transition cursor-pointer"
-                >
-                  <Trash2 className="w-3 h-3 text-amber-400" />
-                  <span>Erase Demo Data</span>
-                </button>
-              )}
-
               {/* Welcome Screen Opener */}
               {onOpenWelcome && (
                 <button
@@ -612,6 +641,123 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Download & Run App Locally Modal (Desktop & Tablet) */}
+      {showDownloadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-lg rounded-2xl bg-slate-900 border border-slate-700/80 p-5 sm:p-6 text-white shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between pb-3.5 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-400">
+                  <Download className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Download & Run CareNest Locally</h3>
+                  <p className="text-xs text-slate-400">Run natively on your desktop, laptop, or tablet with 100% offline security</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDownloadModal(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Direct 1-Click Install if browser supports it */}
+            {isInstallable && (
+              <div className="mt-4 p-3.5 rounded-xl bg-teal-950/40 border border-teal-500/40 flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-xs font-semibold text-teal-200">Instant One-Click Install Available</div>
+                  <div className="text-[11px] text-teal-400/80">Install CareNest directly as a desktop or tablet application.</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await install();
+                    setShowDownloadModal(false);
+                  }}
+                  className="px-3.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md transition shrink-0 cursor-pointer"
+                >
+                  Install Now
+                </button>
+              </div>
+            )}
+
+            {/* Platform Guides */}
+            <div className="mt-4 space-y-3">
+              {/* Desktop Section */}
+              <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60">
+                <div className="flex items-center gap-2 text-teal-300 font-semibold text-xs mb-1.5">
+                  <Monitor className="w-4 h-4 text-teal-400 shrink-0" />
+                  <span>Desktop & Laptop (Windows, Mac, Linux, Chromebook)</span>
+                </div>
+                <ul className="text-[11px] text-slate-300 space-y-1.5 leading-relaxed pl-1">
+                  <li>
+                    <strong className="text-white">Chrome / Edge / Brave:</strong> Click the <strong className="text-teal-400">Install icon</strong> (⨁ or monitor with down arrow) in your browser address bar, or click browser menu (⋮) → <strong className="text-teal-400">"Save and Share" → "Install CareNest"</strong>.
+                  </li>
+                  <li>
+                    <strong className="text-white">Safari on Mac:</strong> Click <strong className="text-teal-400">File</strong> in the top menu bar → <strong className="text-teal-400">"Add to Dock"</strong>.
+                  </li>
+                </ul>
+              </div>
+
+              {/* Tablet Section */}
+              <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60">
+                <div className="flex items-center gap-2 text-teal-300 font-semibold text-xs mb-1.5">
+                  <Tablet className="w-4 h-4 text-teal-400 shrink-0" />
+                  <span>Tablet (iPad & Android Tablets)</span>
+                </div>
+                <ul className="text-[11px] text-slate-300 space-y-1.5 leading-relaxed pl-1">
+                  <li>
+                    <strong className="text-white">iPad (Safari):</strong> Tap the <strong className="text-teal-400">Share button</strong> (box with up arrow) in the top Safari toolbar → scroll down and tap <strong className="text-teal-400">Add to Home Screen</strong>.
+                  </li>
+                  <li>
+                    <strong className="text-white">Android Tablet (Chrome):</strong> Tap the <strong className="text-teal-400">three dots (⋮)</strong> at top right → tap <strong className="text-teal-400">Install app</strong> or <strong className="text-teal-400">Add to Home screen</strong>.
+                  </li>
+                </ul>
+              </div>
+
+              {/* Standalone Offline Launcher Download */}
+              <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-teal-300">
+                    <Laptop className="w-4 h-4 text-teal-400 shrink-0" />
+                    <span>Download Local Offline Launcher</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Save a standalone file to your Desktop or Tablet files to launch CareNest offline anytime.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDownloadLauncher}
+                  className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-teal-300 hover:text-white border border-slate-600 text-xs font-medium transition shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download .html Launcher</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="mt-5 pt-3.5 border-t border-slate-800 flex items-center justify-between">
+              <span className="text-[11px] text-slate-400">
+                CareNest runs 100% locally with zero cloud dependencies.
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowDownloadModal(false)}
+                className="px-4 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold transition cursor-pointer"
+              >
+                Got It
+              </button>
+            </div>
           </div>
         </div>
       )}

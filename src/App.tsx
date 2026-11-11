@@ -273,7 +273,6 @@ export default function App() {
         onSelectPatient={handleSelectPatient}
         onResetDemo={handleResetDemo}
         onEraseAllData={handleEraseAllData}
-        onEraseDemoData={handleEraseDemoData}
         onOpenWelcome={() => setShowGetStarted(true)}
       />
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Pill,
   Clock,
@@ -9,6 +9,11 @@ import {
   AlertCircle,
   Check,
   Calendar,
+  Sparkles,
+  Search,
+  ChevronDown,
+  X,
+  Zap,
 } from 'lucide-react';
 import {
   PatientProfile,
@@ -17,6 +22,12 @@ import {
   MedicationPackage,
   ScheduleEntry,
 } from '../types';
+import {
+  COMMON_PRESCRIPTIONS,
+  PRESCRIPTION_CATEGORIES,
+  PrescriptionTemplate,
+  PrescriptionVariation,
+} from '../data/commonPrescriptions';
 
 interface AddMedicationPageProps {
   patient: PatientProfile;
@@ -33,6 +44,13 @@ export const AddMedicationPage: React.FC<AddMedicationPageProps> = ({
   onSaveMedication,
   onCancel,
 }) => {
+  // Intelligent Prescription Search & Dropdown State
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<PrescriptionTemplate | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   // Step 1: Medication Identity
   const [medicationName, setMedicationName] = useState('');
   const [brandName, setBrandName] = useState('');
@@ -42,6 +60,83 @@ export const AddMedicationPage: React.FC<AddMedicationPageProps> = ({
   const [form, setForm] = useState('Tablet');
   const [route, setRoute] = useState('Oral');
   const [isGeneric, setIsGeneric] = useState(true);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
+  // Filtered prescription templates (matching generic name, display name, brand name, composition, or category)
+  const filteredPrescriptions = useMemo(() => {
+    const q = medicationName.trim().toLowerCase();
+    return COMMON_PRESCRIPTIONS.filter((p) => {
+      const matchesCategory =
+        selectedCategory === 'All' || p.category === selectedCategory;
+      if (!matchesCategory) return false;
+
+      if (!q) return true;
+      return (
+        p.genericName.toLowerCase().includes(q) ||
+        p.displayName.toLowerCase().includes(q) ||
+        p.brandNames.toLowerCase().includes(q) ||
+        p.composition.toLowerCase().includes(q) ||
+        p.strengthValue.toLowerCase().includes(q) ||
+        p.commonIndication.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q)
+      );
+    });
+  }, [medicationName, selectedCategory]);
+
+  // Handle Intelligent Selection & Auto-fill
+  const handleSelectPrescription = (template: PrescriptionTemplate) => {
+    setSelectedPresetId(template.id);
+    setSelectedTemplate(template);
+    setMedicationName(template.genericName);
+    setBrandName(template.brandNames);
+    setComposition(template.composition);
+    setStrengthValue(template.strengthValue);
+    setStrengthUnit(template.strengthUnit);
+    setForm(template.form);
+    setRoute(template.route);
+    setIsGeneric(true);
+
+    if (template.commonIndication && !reasonForUse) {
+      setReasonForUse(template.commonIndication);
+    }
+    if (template.defaultScheduleLabel) {
+      setScheduleEntries([
+        {
+          id: '1',
+          localTime: template.defaultTime || '08:00',
+          doseQuantity: '1',
+          doseUnit: template.form.toLowerCase().includes('capsule')
+            ? 'capsule'
+            : template.form.toLowerCase().includes('inhaler')
+            ? 'puff'
+            : 'tablet',
+          label: template.defaultScheduleLabel,
+        },
+      ]);
+    }
+
+    setShowDropdown(false);
+  };
+
+  // Handle Switching Strength Variation with 1 click
+  const handleSelectVariation = (v: PrescriptionVariation) => {
+    setStrengthValue(v.strengthValue);
+    setStrengthUnit(v.strengthUnit);
+    setComposition(v.composition);
+    if (v.brandNames) {
+      setBrandName(v.brandNames);
+    }
+  };
 
   // Step 2: Schedule & Regimen
   const [frequencyType, setFrequencyType] = useState<'daily' | 'prn'>('daily');
@@ -173,27 +268,183 @@ export const AddMedicationPage: React.FC<AddMedicationPageProps> = ({
         
         {/* Section 1: Medication Identity & Composition */}
         <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-            <Pill className="w-4 h-4 text-teal-600" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-              1. Medication Identity & Active Composition
-            </h3>
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <Pill className="w-4 h-4 text-teal-600" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                1. Medication Identity & Active Composition
+              </h3>
+            </div>
+            <span className="text-[10px] font-mono text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200/80 flex items-center gap-1">
+              <Zap className="w-3 h-3 text-teal-600" />
+              <span>Smart USA & India Prescriptions Active</span>
+            </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
-            {/* Generic / Chemical Name */}
-            <div>
-              <label className="block text-slate-700 font-semibold mb-1">
-                Medication / Generic Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={medicationName}
-                onChange={(e) => setMedicationName(e.target.value)}
-                placeholder="e.g. Lisinopril, Metformin Hydrochloride"
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-teal-500 focus:outline-hidden"
-              />
+            {/* Generic / Chemical Name with Intelligent Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-slate-700 font-semibold">
+                  Medication / Generic Name *
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  className="text-[10px] text-teal-700 hover:text-teal-800 font-semibold flex items-center gap-1 cursor-pointer"
+                >
+                  <Sparkles className="w-3 h-3 text-teal-600" />
+                  <span>Choose from Common Prescriptions</span>
+                  <ChevronDown className={`w-3 h-3 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  value={medicationName}
+                  onChange={(e) => {
+                    setMedicationName(e.target.value);
+                    setShowDropdown(true);
+                  }}
+                  onFocus={() => setShowDropdown(true)}
+                  placeholder="Type to search or select (e.g. Metformin, Atorvastatin, Amlodipine...)"
+                  className="w-full px-3 py-2 pr-8 rounded-lg border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-teal-500 focus:outline-hidden"
+                />
+                {medicationName && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMedicationName('');
+                      setSelectedPresetId(null);
+                    }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Intelligent Prescriptions Dropdown List */}
+              {showDropdown && (
+                <div className="absolute z-30 left-0 right-0 mt-1.5 max-h-80 overflow-y-auto bg-white rounded-xl border border-slate-200 shadow-2xl divide-y divide-slate-100 text-xs animate-in fade-in duration-100">
+                  {/* Category Filter Bar */}
+                  <div className="p-2 bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
+                    <div className="flex items-center justify-between mb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                      <span>Prescriptions & Combinations ({filteredPrescriptions.length})</span>
+                      <span className="text-teal-700 normal-case font-medium">USA & India Database</span>
+                    </div>
+                    <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar">
+                      {PRESCRIPTION_CATEGORIES.map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setSelectedCategory(cat)}
+                          className={`px-2 py-0.5 rounded-full text-[10px] whitespace-nowrap font-medium transition cursor-pointer ${
+                            selectedCategory === cat
+                              ? 'bg-teal-700 text-white font-bold shadow-2xs'
+                              : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {filteredPrescriptions.length === 0 ? (
+                    <div className="p-4 text-center text-slate-500 text-[11px]">
+                      <span className="font-semibold text-slate-700">No matching preset found in this category.</span>
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        You can continue typing any custom medication name, brand, and strength!
+                      </p>
+                    </div>
+                  ) : (
+                    filteredPrescriptions.map((p) => {
+                      const isSelected = selectedPresetId === p.id;
+                      return (
+                        <div
+                          key={p.id}
+                          onClick={() => handleSelectPrescription(p)}
+                          className={`p-3 hover:bg-teal-50/70 cursor-pointer transition flex items-start justify-between gap-3 ${
+                            isSelected ? 'bg-teal-50 border-l-4 border-teal-600' : ''
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-slate-900 text-xs">
+                                {p.displayName}
+                              </span>
+                              <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-teal-100 text-teal-800 border border-teal-200">
+                                {p.strengthValue} {p.strengthUnit}
+                              </span>
+                              <span className="px-1.5 py-0.2 rounded text-[9px] bg-slate-100 text-slate-600 font-medium">
+                                {p.category}
+                              </span>
+                            </div>
+
+                            <p className="text-[11px] text-slate-600 truncate mt-1">
+                              <strong className="text-slate-800">Brands:</strong> {p.brandNames}
+                            </p>
+
+                            <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
+                              <strong className="text-slate-700">Composition:</strong> {p.composition}
+                            </p>
+
+                            <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-1 flex-wrap">
+                              <span>{p.commonIndication}</span>
+                              <span>·</span>
+                              <span>{p.form} ({p.route})</span>
+                              {p.availableVariations && p.availableVariations.length > 1 && (
+                                <span className="text-teal-700 font-semibold bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">
+                                  +{p.availableVariations.length} strength variations
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-[11px] text-teal-700 hover:text-teal-800 font-bold shrink-0 pt-0.5">
+                            Select ↵
+                          </span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+
+              {/* Interactive Strength & Combination Variations Bar */}
+              {selectedTemplate?.availableVariations && selectedTemplate.availableVariations.length > 0 && (
+                <div className="mt-2.5 p-2.5 rounded-xl bg-teal-50/90 border border-teal-200 shadow-2xs animate-in fade-in">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-teal-900 flex items-center gap-1">
+                      <Zap className="w-3.5 h-3.5 text-teal-600" />
+                      <span>Variations based on Strength & Combos ({selectedTemplate.availableVariations.length}):</span>
+                    </span>
+                    <span className="text-[10px] text-teal-700 font-medium">1-click switch</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedTemplate.availableVariations.map((v, idx) => {
+                      const isActive = strengthValue === v.strengthValue && strengthUnit === v.strengthUnit;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleSelectVariation(v)}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1 ${
+                            isActive
+                              ? 'bg-teal-700 text-white shadow-xs scale-102 ring-2 ring-teal-400'
+                              : 'bg-white hover:bg-teal-100 text-slate-700 border border-teal-200/90'
+                          }`}
+                        >
+                          <span>{v.label}</span>
+                          {isActive && <Check className="w-3 h-3 text-white" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Brand / Trade Name */}
@@ -235,7 +486,29 @@ export const AddMedicationPage: React.FC<AddMedicationPageProps> = ({
                   <option value="mg/5mL">mg/5mL</option>
                   <option value="IU">IU</option>
                   <option value="%">%</option>
+                  <option value="puff">puff</option>
+                  <option value="drops">drops</option>
+                  <option value="spray">spray</option>
                 </select>
+              </div>
+
+              {/* Quick strength numeric presets */}
+              <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                <span className="text-[10px] text-slate-400 font-medium">Quick:</span>
+                {['2.5', '5', '10', '20', '25', '40', '50', '75', '100', '250', '500', '650', '850', '1000'].map((val) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setStrengthValue(val)}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition cursor-pointer ${
+                      strengthValue === val
+                        ? 'bg-teal-700 text-white font-bold shadow-2xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {val}
+                  </button>
+                ))}
               </div>
             </div>
 
